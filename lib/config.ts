@@ -4,6 +4,12 @@ export const config = {
   showEnergyThread: process.env.SHOW_ENERGY_THREAD !== "false",
   showEnergyDashboard: process.env.SHOW_ENERGY_DASHBOARD !== "false",
   energyMode: (process.env.ENERGY_MODE || "both") as "numeric" | "equivalent" | "both",
+
+  // Session / interaction extensions
+  chatMode: (process.env.NEXT_PUBLIC_CHAT_MODE || "AWARENESS") as "AWARENESS" | "GUIDED",
+  enableSessionTracking: process.env.ENABLE_SESSION_TRACKING !== "false",
+  enablePromptValidation: process.env.ENABLE_PROMPT_VALIDATION !== "false",
+  enablePromptEnhancement: process.env.ENABLE_PROMPT_ENHANCEMENT !== "false",
 };
 
 export function calculateEnergy(tokensUsed: number): number {

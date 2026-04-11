@@ -1,10 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, ThumbsUp, ThumbsDown, RotateCcw, Check } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, RotateCcw, Check, CheckCircle2, AlertCircle } from "lucide-react";
 import { Message } from "@/types";
 import { EnergyLabel } from "./energy-label";
 import { cn } from "@/lib/utils";
+
+const CHAT_MODE = process.env.NEXT_PUBLIC_CHAT_MODE ?? "AWARENESS";
+
+function PromptQualityBadge({ score }: { score: number }) {
+  if (CHAT_MODE !== "GUIDED") return null;
+  const good = score >= 0.7;
+  return (
+    <span
+      title={`Prompt quality: ${Math.round(score * 100)}%`}
+      className={cn(
+        "inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full",
+        good
+          ? "bg-green-50 text-green-700"
+          : "bg-amber-50 text-amber-700"
+      )}
+    >
+      {good ? (
+        <CheckCircle2 className="w-3 h-3" />
+      ) : (
+        <AlertCircle className="w-3 h-3" />
+      )}
+      {good ? "Good prompt" : "Could be clearer"}
+    </span>
+  );
+}
 
 interface MessageBubbleProps {
   message: Message;
@@ -85,6 +110,10 @@ export function MessageBubble({ message, onRetry }: MessageBubbleProps) {
               <EnergyLabel energyUsed={message.energy_used} />
             )}
           </div>
+        )}
+
+        {isUser && message.prompt_quality_score != null && (
+          <PromptQualityBadge score={message.prompt_quality_score} />
         )}
       </div>
 

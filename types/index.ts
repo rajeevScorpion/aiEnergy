@@ -4,6 +4,15 @@ export interface Thread {
   title: string;
   total_energy: number;
   created_at: string;
+
+  // Session extensions
+  mode: "AWARENESS" | "GUIDED";
+  task_id: string | null;
+  end_time: string | null;
+  total_prompts: number;
+  total_tokens_in: number;
+  total_tokens_out: number;
+  avg_energy_per_prompt: number;
 }
 
 export interface Message {
@@ -14,4 +23,18 @@ export interface Message {
   energy_used: number | null;
   tokens_used: number | null;
   created_at: string;
+
+  // Interaction extensions
+  raw_prompt: string | null;
+  enhanced_prompt: string | null;
+  tokens_in: number | null;
+  tokens_out: number | null;
+  prompt_quality_score: number | null;
+  validation_flags: {
+    has_intent: boolean;
+    has_context: boolean;
+    has_style: boolean;
+    has_constraints: boolean;
+    has_output_spec: boolean;
+  } | null;
 }
