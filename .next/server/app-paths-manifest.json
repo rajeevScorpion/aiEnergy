@@ -1,7 +1,0 @@
-{
-  "/api/threads/[threadId]/messages/route": "app/api/threads/[threadId]/messages/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/api/threads/route": "app/api/threads/route.js",
-  "/api/chat/route": "app/api/chat/route.js",
-  "/chat/[threadId]/page": "app/chat/[threadId]/page.js"
-}
