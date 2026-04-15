@@ -7,6 +7,7 @@ import { MessageBubble } from "@/components/message-bubble";
 import { ChatInput, ChatInputHandle } from "@/components/chat-input";
 import { Zap, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 
 const STATUS_PHASES = [
   "Thinking…",
@@ -255,8 +256,8 @@ export default function ChatPage() {
                       <p className="text-xs text-gray-400 mt-1">{MOTIVATIONAL_TIPS[tipIdx]}</p>
                     </div>
                   ) : (
-                    <div className="bg-gray-100 text-gray-900 rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap">
-                      {streamingContent}
+                    <div className="bg-gray-100 text-gray-900 rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm leading-relaxed">
+                      <MarkdownRenderer content={streamingContent} />
                       <span className="inline-block w-0.5 h-4 bg-gray-500 ml-0.5 animate-pulse align-middle" />
                     </div>
                   )}

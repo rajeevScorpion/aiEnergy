@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { Copy, ThumbsUp, ThumbsDown, RotateCcw, Check, CheckCircle2, AlertCircle, Loader2, X, Sparkles, ClipboardCopy, MessageSquarePlus, RefreshCw } from "lucide-react";
+import { Copy, ThumbsUp, ThumbsDown, RotateCcw, Check, CheckCircle2, AlertCircle, Loader2, X, Sparkles, ClipboardCopy, MessageSquarePlus, RefreshCw, Plus } from "lucide-react";
 import { Message } from "@/types";
 import { EnergyLabel } from "./energy-label";
 import { cn } from "@/lib/utils";
+import { MarkdownRenderer } from "./markdown-renderer";
 
 const CHAT_MODE = process.env.NEXT_PUBLIC_CHAT_MODE ?? "AWARENESS";
 
@@ -163,22 +164,54 @@ function PromptQualityBadge({
                   {/* Framework inputs — tip examples as placeholders */}
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Refine with Framework</p>
-                    <div className="grid grid-cols-[6rem_1fr] gap-x-2 gap-y-2 items-center">
-                      {suggestion.tips.map((tip) => (
-                        <React.Fragment key={tip.label}>
-                          <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded-full text-left whitespace-nowrap">
-                            {tip.label}
-                          </span>
-                          <input
-                            type="text"
-                            placeholder={tip.example}
-                            value={frameworkInputs[tip.label] ?? ""}
-                            onChange={(e) => setFrameworkInputs((prev) => ({ ...prev, [tip.label]: e.target.value }))}
-                            className="w-full text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-amber-300 focus:ring-1 focus:ring-amber-200 transition-colors placeholder-gray-400"
-                          />
-                        </React.Fragment>
-                      ))}
+                    <div className="space-y-2">
+                      {suggestion.tips.map((tip) => {
+                        const filled = !!(frameworkInputs[tip.label]?.trim());
+                        return (
+                          <div key={tip.label} className="flex items-center gap-2">
+                            <span className={cn(
+                              "text-xs font-semibold px-2 py-1 rounded-full text-left whitespace-nowrap w-24 flex-shrink-0 transition-colors",
+                              filled
+                                ? "text-green-700 bg-green-50"
+                                : "text-amber-700 bg-amber-50"
+                            )}>
+                              {filled && <CheckCircle2 className="w-3 h-3 inline mr-0.5 -mt-0.5" />}
+                              {tip.label}
+                            </span>
+                            <div className="flex-1 relative">
+                              <input
+                                type="text"
+                                placeholder={tip.example}
+                                value={frameworkInputs[tip.label] ?? ""}
+                                onChange={(e) => setFrameworkInputs((prev) => ({ ...prev, [tip.label]: e.target.value }))}
+                                className={cn(
+                                  "w-full text-xs border rounded-lg px-3 py-1.5 pr-8 outline-none transition-colors placeholder-gray-400",
+                                  filled
+                                    ? "border-green-200 focus:border-green-300 focus:ring-1 focus:ring-green-200"
+                                    : "border-gray-200 focus:border-amber-300 focus:ring-1 focus:ring-amber-200"
+                                )}
+                              />
+                              {!filled && (
+                                <button
+                                  onClick={() => setFrameworkInputs((prev) => ({ ...prev, [tip.label]: tip.example }))}
+                                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-amber-100 text-amber-500 hover:text-amber-700 transition-colors"
+                                  title={`Use suggestion: "${tip.example}"`}
+                                >
+                                  <Plus className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
+                    {/* Missing fields hint */}
+                    {suggestion.tips.some((tip) => !frameworkInputs[tip.label]?.trim()) && (
+                      <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                        Fill in missing fields or tap <Plus className="w-3 h-3 inline" /> to use suggestions
+                      </p>
+                    )}
                   </div>
 
                   {/* Validate button */}
@@ -251,13 +284,13 @@ export function MessageBubble({ message, userInitials, onRetry, onUseInChat }: M
       <div className={cn("max-w-[85%] md:max-w-[75%] flex flex-col gap-1.5", isUser && "items-end")}>
         <div
           className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap",
+            "rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
             isUser
-              ? "bg-gray-200 text-gray-800 rounded-br-sm"
+              ? "bg-gray-200 text-gray-800 rounded-br-sm whitespace-pre-wrap"
               : "bg-gray-100 text-gray-900 rounded-bl-sm"
           )}
         >
-          {message.content}
+          {isUser ? message.content : <MarkdownRenderer content={message.content} />}
         </div>
 
         {!isUser && (
