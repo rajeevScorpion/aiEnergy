@@ -223,11 +223,12 @@ function PromptQualityBadge({
 
 interface MessageBubbleProps {
   message: Message;
+  userInitials?: string;
   onRetry?: () => void;
   onUseInChat?: (prompt: string) => void;
 }
 
-export function MessageBubble({ message, onRetry, onUseInChat }: MessageBubbleProps) {
+export function MessageBubble({ message, userInitials, onRetry, onUseInChat }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState<"up" | "down" | null>(null);
 
@@ -242,8 +243,8 @@ export function MessageBubble({ message, onRetry, onUseInChat }: MessageBubblePr
   return (
     <div className={cn("flex gap-3 px-3 py-2 md:px-4 md:py-3 group", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
-        <div className="w-7 h-7 rounded-full bg-black flex-shrink-0 flex items-center justify-center mt-0.5">
-          <span className="text-white text-xs font-bold">AI</span>
+        <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center mt-0.5">
+          <span className="text-gray-500 text-xs font-bold">AI</span>
         </div>
       )}
 
@@ -252,7 +253,7 @@ export function MessageBubble({ message, onRetry, onUseInChat }: MessageBubblePr
           className={cn(
             "rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap",
             isUser
-              ? "bg-black text-white rounded-br-sm"
+              ? "bg-gray-200 text-gray-800 rounded-br-sm"
               : "bg-gray-100 text-gray-900 rounded-bl-sm"
           )}
         >
@@ -316,8 +317,8 @@ export function MessageBubble({ message, onRetry, onUseInChat }: MessageBubblePr
       </div>
 
       {isUser && (
-        <div className="w-7 h-7 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center mt-0.5">
-          <span className="text-gray-600 text-xs font-bold">You</span>
+        <div className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0 flex items-center justify-center mt-0.5">
+          <span className="text-gray-600 text-xs font-semibold">{userInitials || "You"}</span>
         </div>
       )}
     </div>

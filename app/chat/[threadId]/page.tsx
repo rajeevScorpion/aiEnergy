@@ -6,6 +6,7 @@ import { Message } from "@/types";
 import { MessageBubble } from "@/components/message-bubble";
 import { ChatInput, ChatInputHandle } from "@/components/chat-input";
 import { Zap, Globe } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const STATUS_PHASES = [
   "Thinking…",
@@ -31,12 +32,28 @@ export default function ChatPage() {
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const [searchingQuery, setSearchingQuery] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [userInitials, setUserInitials] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<ChatInputHandle>(null);
 
   // Rotating status and tip for loading state
   const [statusIdx, setStatusIdx] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
+
+  // Fetch user initials from Google account
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        setUserInitials((parts[0][0] + parts[parts.length - 1][0]).toUpperCase());
+      } else if (parts[0]) {
+        setUserInitials(parts[0].slice(0, 2).toUpperCase());
+      }
+    });
+  }, []);
 
   const loadMessages = useCallback(async () => {
     const res = await fetch(`/api/threads/${threadId}/messages`);
@@ -191,11 +208,12 @@ export default function ChatPage() {
             </p>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto py-4">
+          <div className="max-w-3xl mx-auto pt-14 pb-4 md:pt-4">
             {messages.map((msg, i) => (
               <MessageBubble
                 key={msg.id}
                 message={msg}
+                userInitials={userInitials}
                 onRetry={
                   msg.role === "assistant" && i === messages.length - 1 && !loading
                     ? handleRetry
@@ -208,8 +226,8 @@ export default function ChatPage() {
             {/* Web search indicator */}
             {searchingQuery && (
               <div className="flex gap-3 px-3 py-2 md:px-4 md:py-3">
-                <div className="w-7 h-7 rounded-full bg-black flex-shrink-0 flex items-center justify-center mt-0.5">
-                  <span className="text-white text-xs font-bold">AI</span>
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center mt-0.5">
+                  <span className="text-gray-500 text-xs font-bold">AI</span>
                 </div>
                 <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm">
                   <Globe className="w-3.5 h-3.5 animate-pulse flex-shrink-0" />
@@ -221,8 +239,8 @@ export default function ChatPage() {
             {/* Streaming assistant bubble / loading state */}
             {streamingContent !== null && (
               <div className="flex gap-3 px-4 py-3">
-                <div className="w-7 h-7 rounded-full bg-black flex-shrink-0 flex items-center justify-center mt-0.5">
-                  <span className="text-white text-xs font-bold">AI</span>
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center mt-0.5">
+                  <span className="text-gray-500 text-xs font-bold">AI</span>
                 </div>
                 <div className="max-w-[75%]">
                   {streamingContent.length === 0 ? (

@@ -23,7 +23,7 @@ export function EnergyLabel({ energyUsed }: EnergyLabelProps) {
             </DialogTrigger>
           </TooltipTrigger>
 
-          <TooltipContent side="top" className="max-w-[200px] text-xs leading-relaxed">
+          <TooltipContent side="top" className="max-w-[280px] text-xs leading-relaxed">
             <p className="font-medium mb-1">Try clearer prompts:</p>
             <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
               <li>Role — "Act as a UX designer"</li>
