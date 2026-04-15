@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Copy, ThumbsUp, ThumbsDown, RotateCcw, Check, CheckCircle2, AlertCircle, Loader2, X, Sparkles } from "lucide-react";
+import React, { useState } from "react";
+import { Copy, ThumbsUp, ThumbsDown, RotateCcw, Check, CheckCircle2, AlertCircle, Loader2, X, Sparkles, ClipboardCopy, MessageSquarePlus, RefreshCw } from "lucide-react";
 import { Message } from "@/types";
 import { EnergyLabel } from "./energy-label";
 import { cn } from "@/lib/utils";
@@ -13,14 +13,18 @@ interface Suggestion {
   tips: { label: string; example: string }[];
 }
 
+const FRAMEWORK_LABELS = ["Act As", "Context", "Specificity", "Output Format", "Style / Tone"] as const;
+
 function PromptQualityBadge({
   score,
   rawPrompt,
   validationFlags,
+  onUseInChat,
 }: {
   score: number;
   rawPrompt: string;
   validationFlags: Message["validation_flags"];
+  onUseInChat?: (prompt: string) => void;
 }) {
   if (CHAT_MODE !== "GUIDED") return null;
 
@@ -28,11 +32,15 @@ function PromptQualityBadge({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);
-  const hoverTimer = useState<ReturnType<typeof setTimeout> | null>(null);
+  // Editable state
+  const [editedPrompt, setEditedPrompt] = useState("");
+  const [frameworkInputs, setFrameworkInputs] = useState<Record<string, string>>({});
+  const [validating, setValidating] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   async function handleOpen() {
     setOpen(true);
-    if (suggestion) return; // already fetched
+    if (suggestion) return;
     setLoading(true);
     try {
       const res = await fetch("/api/suggest-prompt", {
@@ -40,29 +48,61 @@ function PromptQualityBadge({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: rawPrompt, flags: validationFlags }),
       });
-      if (res.ok) setSuggestion(await res.json());
+      if (res.ok) {
+        const data: Suggestion = await res.json();
+        setSuggestion(data);
+        setEditedPrompt(data.improved);
+      }
     } finally {
       setLoading(false);
     }
   }
 
-  function handleMouseEnter() {
-    hoverTimer[1](setTimeout(handleOpen, 600));
+
+  function buildFinalPrompt(): string {
+    const extras = FRAMEWORK_LABELS
+      .map((label) => frameworkInputs[label]?.trim())
+      .filter(Boolean);
+    if (extras.length === 0) return editedPrompt.trim();
+    return `${editedPrompt.trim()}\n\n${extras.join(". ")}.`;
   }
 
-  function handleMouseLeave() {
-    if (hoverTimer[0]) {
-      clearTimeout(hoverTimer[0]);
-      hoverTimer[1](null);
+  async function handleValidate() {
+    const combined = buildFinalPrompt();
+    if (!combined) return;
+    setValidating(true);
+    try {
+      const res = await fetch("/api/suggest-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: combined, flags: null }),
+      });
+      if (res.ok) {
+        const data: Suggestion = await res.json();
+        setSuggestion(data);
+        setEditedPrompt(data.improved);
+        setFrameworkInputs({});
+      }
+    } finally {
+      setValidating(false);
     }
+  }
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(buildFinalPrompt());
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleUseInChat() {
+    onUseInChat?.(buildFinalPrompt());
+    setOpen(false);
   }
 
   return (
     <>
       <button
         onClick={handleOpen}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         title={`Prompt quality: ${Math.round(score * 100)}%`}
         className={cn(
           "inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full cursor-pointer transition-colors",
@@ -100,36 +140,74 @@ function PromptQualityBadge({
                 </div>
               ) : suggestion ? (
                 <>
-                  {/* Improved prompt */}
+                  {/* Editable improved prompt with inline copy */}
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Improved Version</p>
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 leading-relaxed">
-                      {suggestion.improved}
+                    <div className="relative">
+                      <textarea
+                        value={editedPrompt}
+                        onChange={(e) => setEditedPrompt(e.target.value)}
+                        rows={4}
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 pr-9 text-sm text-gray-800 leading-relaxed resize-none outline-none focus:border-amber-300 focus:ring-1 focus:ring-amber-200 transition-colors"
+                      />
+                      <button
+                        onClick={handleCopy}
+                        className="absolute top-2.5 right-2.5 p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Copy prompt"
+                      >
+                        {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <ClipboardCopy className="w-3.5 h-3.5" />}
+                      </button>
                     </div>
                   </div>
 
-                  {/* Framework tips */}
+                  {/* Framework inputs — tip examples as placeholders */}
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Prompt Framework</p>
-                    <div className="space-y-2">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Refine with Framework</p>
+                    <div className="grid grid-cols-[6rem_1fr] gap-x-2 gap-y-2 items-center">
                       {suggestion.tips.map((tip) => (
-                        <div key={tip.label} className="flex gap-3 items-start">
-                          <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full whitespace-nowrap mt-0.5">
+                        <React.Fragment key={tip.label}>
+                          <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded-full text-left whitespace-nowrap">
                             {tip.label}
                           </span>
-                          <span className="text-xs text-gray-600 leading-relaxed">{tip.example}</span>
-                        </div>
+                          <input
+                            type="text"
+                            placeholder={tip.example}
+                            value={frameworkInputs[tip.label] ?? ""}
+                            onChange={(e) => setFrameworkInputs((prev) => ({ ...prev, [tip.label]: e.target.value }))}
+                            className="w-full text-xs border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-amber-300 focus:ring-1 focus:ring-amber-200 transition-colors placeholder-gray-400"
+                          />
+                        </React.Fragment>
                       ))}
                     </div>
                   </div>
 
-                  {/* Score */}
-                  <div className={cn(
-                    "text-xs text-center px-3 py-2 rounded-lg",
-                    good ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
-                  )}>
-                    Quality score: <span className="font-semibold">{Math.round(score * 100)}%</span>
-                    {!good && " — adding the missing elements above would improve this"}
+                  {/* Validate button */}
+                  <button
+                    onClick={handleValidate}
+                    disabled={validating}
+                    className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+                  >
+                    {validating ? (
+                      <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Validating…</>
+                    ) : (
+                      <><RefreshCw className="w-3.5 h-3.5" /> Validate & Improve</>
+                    )}
+                  </button>
+
+                  {/* Score + Use in Chat */}
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "text-xs px-3 py-2 rounded-lg flex-1",
+                      good ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"
+                    )}>
+                      Quality: <span className="font-semibold">{Math.round(score * 100)}%</span>
+                    </div>
+                    <button
+                      onClick={handleUseInChat}
+                      className="flex items-center gap-1.5 bg-black hover:bg-gray-800 text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors"
+                    >
+                      <MessageSquarePlus className="w-3.5 h-3.5" /> Use in Chat
+                    </button>
                   </div>
                 </>
               ) : (
@@ -146,9 +224,10 @@ function PromptQualityBadge({
 interface MessageBubbleProps {
   message: Message;
   onRetry?: () => void;
+  onUseInChat?: (prompt: string) => void;
 }
 
-export function MessageBubble({ message, onRetry }: MessageBubbleProps) {
+export function MessageBubble({ message, onRetry, onUseInChat }: MessageBubbleProps) {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState<"up" | "down" | null>(null);
 
@@ -231,6 +310,7 @@ export function MessageBubble({ message, onRetry }: MessageBubbleProps) {
             score={message.prompt_quality_score}
             rawPrompt={message.raw_prompt ?? message.content}
             validationFlags={message.validation_flags}
+            onUseInChat={onUseInChat}
           />
         )}
       </div>

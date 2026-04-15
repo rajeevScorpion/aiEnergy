@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { Plus, Zap, BarChart2, LogOut, MessageSquare, X } from "lucide-react";
+import { Plus, Zap, BarChart2, LogOut, MessageSquare, X, BatteryMedium } from "lucide-react";
 import { Thread } from "@/types";
 import { createClient } from "@/lib/supabase/client";
 import { config, formatEnergy } from "@/lib/config";
@@ -135,6 +135,7 @@ function ThreadItem({
   onClick: () => void;
 }) {
   const [hovering, setHovering] = useState(false);
+  const hasEnergy = config.showEnergyThread && thread.total_energy > 0;
 
   return (
     <button
@@ -146,12 +147,18 @@ function ThreadItem({
         isActive ? "bg-gray-700 text-white" : "text-gray-300 hover:bg-gray-800 hover:text-white"
       )}
     >
-      <div className="flex items-start gap-2">
-        <MessageSquare className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 opacity-60" />
+      <div className="flex items-center gap-2">
+        <MessageSquare className="w-3.5 h-3.5 flex-shrink-0 opacity-60" />
         <span className="truncate flex-1">{thread.title || "New Chat"}</span>
+        {hasEnergy && (
+          <Zap className={cn(
+            "w-3 h-3 flex-shrink-0 transition-colors",
+            hovering ? "text-amber-400" : "text-gray-600"
+          )} />
+        )}
       </div>
 
-      {hovering && config.showEnergyThread && thread.total_energy > 0 && (
+      {hovering && hasEnergy && (
         <div className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs text-amber-400 whitespace-nowrap z-10">
           {formatEnergy(thread.total_energy, "numeric")}
         </div>

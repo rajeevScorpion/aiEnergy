@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, KeyboardEvent } from "react";
+import { useState, useRef, useEffect, useImperativeHandle, forwardRef, KeyboardEvent } from "react";
 import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,11 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
-export function ChatInput({ onSend, disabled }: ChatInputProps) {
+export interface ChatInputHandle {
+  setDraft: (text: string) => void;
+}
+
+export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(function ChatInput({ onSend, disabled }, ref) {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -30,6 +34,21 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
     }
   }
 
+  useImperativeHandle(ref, () => ({
+    setDraft(text: string) {
+      setValue(text);
+      // Resize textarea after value update
+      setTimeout(() => {
+        const el = textareaRef.current;
+        if (el) {
+          el.style.height = "auto";
+          el.style.height = Math.min(el.scrollHeight, 200) + "px";
+          el.focus();
+        }
+      }, 0);
+    },
+  }));
+
   function handleInput() {
     const el = textareaRef.current;
     if (!el) return;
@@ -38,7 +57,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   }
 
   return (
-    <div className="border-t bg-white px-3 py-2 md:px-4 md:py-3 safe-bottom">
+    <div className="border-t bg-white px-3 py-2 md:px-4 md:py-3 safe-bottom sticky bottom-0 z-10">
       <div className="max-w-3xl mx-auto">
         <div className="flex items-end gap-2 border border-gray-300 rounded-xl px-3 py-2 md:px-4 md:py-2.5 focus-within:border-gray-400 transition-colors bg-white shadow-sm">
           <textarea
@@ -73,4 +92,4 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       </div>
     </div>
   );
-}
+});
