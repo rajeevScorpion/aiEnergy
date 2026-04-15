@@ -7,13 +7,15 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "AI Energy Chat",
   description: "Chat with AI — see your energy footprint",
+  other: {
+    "theme-color": "#ffffff",
+  },
 };
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -23,6 +25,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <meta name="theme-color" content="#ffffff" />
+      </head>
       <body className={inter.className}>{children}</body>
     </html>
   );
